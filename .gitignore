@@ -1,0 +1,25 @@
+# Exclusion of the virtual environment
+.venv/
+
+# Exclusion of environment settings
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs, temporary files
+*.log
+*.tmp
+
+# Secret files and environment files
+.env
+*.env
+.env.*
+!*.env.example
+
+# "Media" folder
+media/
+!media/.gitkeep
