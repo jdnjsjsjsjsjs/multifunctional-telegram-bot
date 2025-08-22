@@ -44,8 +44,8 @@ main_menu = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="❓ Почему мы?"), KeyboardButton(text="🖼 ВИТРИНА")],
         [KeyboardButton(text="🤖 REELS BOT"), KeyboardButton(text="💬 Получить консультацию")],
-        [KeyboardButton(text="🆓 Бесплатные продукты"), KeyboardButton(text="🔗 Реферальный центр")],
-        [KeyboardButton(text="👀 О нас"), KeyboardButton(text="💳 Быстрый заказ")]
+        [KeyboardButton(text="🆓 Бесплатные продукты"), KeyboardButton(text="👀 О нас")],
+        [KeyboardButton(text="💳 Быстрый заказ")]
     ],
     resize_keyboard=True
 )
@@ -593,7 +593,6 @@ async def faq(callback: CallbackQuery):
         text=caption_2
     )
 
-# Handler for quick order
 @router.message(F.text == "💳 Быстрый заказ")
 async def quick_order(message: Message):
     image_path = BASE_DIR / "media" / "quick_order.jpg"
@@ -605,11 +604,10 @@ async def quick_order(message: Message):
     await message.answer_photo(
         photo=image,
         caption=caption,
-        reply_markup=None  # Убрана кнопка
+        reply_markup=None
     )
-    quick_order_context[message.from_user.id] = True  # Устанавливаем контекст
+    quick_order_context[message.from_user.id] = True
 
-# Handle message input for quick order
 @router.message(F.text, F.chat.type == "private")
 async def handle_quick_order_message(message: Message):
     user_id = message.from_user.id
@@ -623,11 +621,10 @@ async def handle_quick_order_message(message: Message):
             f"📝 Вы написали: {user_problem}\nПравильно ли сформулирован вопрос?",
             reply_markup=kb
         )
-        quick_order_context[user_id] = {"problem": user_problem}  # Сохраняем проблему в контексте
+        quick_order_context[user_id] = {"problem": user_problem}
     else:
         print(f"Сообщение вне контекста от {user_id}: {message.text}")
 
-# Handle confirmation
 @router.callback_query(F.data == "confirm_yes")
 async def confirm_yes(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -655,7 +652,7 @@ async def confirm_yes(callback: CallbackQuery):
                 reply_markup=main_menu
             )
         finally:
-            del quick_order_context[user_id]  # Сбрасываем контекст
+            del quick_order_context[user_id]
     await callback.answer()
 
 @router.callback_query(F.data == "confirm_no")
@@ -666,7 +663,7 @@ async def confirm_no(callback: CallbackQuery):
             "💬 Пожалуйста, перепишите свою проблему или ситуацию.",
             reply_markup=None
         )
-        quick_order_context[user_id] = True  # Сбрасываем на ожидание нового ввода
+        quick_order_context[user_id] = True
     await callback.answer()
 
 async def main():
