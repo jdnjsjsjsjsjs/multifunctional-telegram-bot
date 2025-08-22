@@ -31,12 +31,14 @@ MANAGER_USERNAME = os.getenv("MANAGER_USERNAME")
 EMAIL = os.getenv("EMAIL")
 PHONE_NUMBER = os.getenv("PHONE_NUMBER")
 PORTFOLIO_LINK = os.getenv("PORTFOLIO_LINK")
+MANAGER_CHAT_ID = os.getenv("MANAGER_CHAT_ID")
 
 bot = Bot(token=API_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
 last_voice_ids = {}
+quick_order_context = {}
 
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
@@ -590,6 +592,82 @@ async def faq(callback: CallbackQuery):
         chat_id=callback.from_user.id,
         text=caption_2
     )
+
+# Handler for quick order
+@router.message(F.text == "💳 Быстрый заказ")
+async def quick_order(message: Message):
+    image_path = BASE_DIR / "media" / "quick_order.jpg"
+    if not image_path.exists():
+        await message.answer("⚠️ Картинка не найдена.")
+        return
+    image = FSInputFile(image_path)
+    caption = "💳 <b>Быстрый заказ</b>\n\n📸 Опишите свою проблему или ситуацию, и мы поможем вам."
+    await message.answer_photo(
+        photo=image,
+        caption=caption,
+        reply_markup=None  # Убрана кнопка
+    )
+    quick_order_context[message.from_user.id] = True  # Устанавливаем контекст
+
+# Handle message input for quick order
+@router.message(F.text, F.chat.type == "private")
+async def handle_quick_order_message(message: Message):
+    user_id = message.from_user.id
+    if user_id in quick_order_context and quick_order_context[user_id]:
+        user_problem = message.text
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Да", callback_data="confirm_yes"),
+             InlineKeyboardButton(text="❌ Нет", callback_data="confirm_no")]
+        ])
+        await message.answer(
+            f"📝 Вы написали: {user_problem}\nПравильно ли сформулирован вопрос?",
+            reply_markup=kb
+        )
+        quick_order_context[user_id] = {"problem": user_problem}  # Сохраняем проблему в контексте
+    else:
+        print(f"Сообщение вне контекста от {user_id}: {message.text}")
+
+# Handle confirmation
+@router.callback_query(F.data == "confirm_yes")
+async def confirm_yes(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id in quick_order_context and "problem" in quick_order_context[user_id]:
+        user_problem = quick_order_context[user_id]["problem"]
+        try:
+            await bot.send_message(
+                chat_id=MANAGER_CHAT_ID,
+                text=f"Новый заказ от @{callback.from_user.username}:\nПроблема: {user_problem}"
+            )
+            await callback.message.edit_text(
+                "📩 Спасибо! Ваше сообщение отправлено менеджеру. С вами свяжутся в ближайшее время."
+            )
+            await callback.message.answer(
+                "🏃‍♂️ Уже бежим к вам на помощь!"
+            )
+            await callback.message.answer(
+                "📋 Главное меню:",
+                reply_markup=main_menu
+            )
+        except Exception as e:
+            await callback.message.answer(f"❌ Ошибка при отправке: {str(e)}. Попробуйте позже.")
+            await callback.message.answer(
+                "📋 Главное меню:",
+                reply_markup=main_menu
+            )
+        finally:
+            del quick_order_context[user_id]  # Сбрасываем контекст
+    await callback.answer()
+
+@router.callback_query(F.data == "confirm_no")
+async def confirm_no(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id in quick_order_context:
+        await callback.message.edit_text(
+            "💬 Пожалуйста, перепишите свою проблему или ситуацию.",
+            reply_markup=None
+        )
+        quick_order_context[user_id] = True  # Сбрасываем на ожидание нового ввода
+    await callback.answer()
 
 async def main():
     dp.include_router(router)
