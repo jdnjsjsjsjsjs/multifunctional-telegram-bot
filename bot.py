@@ -42,10 +42,9 @@ quick_order_context = {}
 
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="❓ Почему мы?"), KeyboardButton(text="🖼 ВИТРИНА")],
-        [KeyboardButton(text="🤖 REELS BOT"), KeyboardButton(text="💬 Получить консультацию")],
-        [KeyboardButton(text="🆓 Бесплатные продукты"), KeyboardButton(text="👀 О нас")],
-        [KeyboardButton(text="💳 Быстрый заказ")]
+        [KeyboardButton(text="❓ Почему мы?"), KeyboardButton(text="🤖 REELS BOT")],
+        [KeyboardButton(text="💬 Получить консультацию"), KeyboardButton(text="🆓 Бесплатные продукты")],
+        [KeyboardButton(text="👀 О нас"), KeyboardButton(text="💳 Быстрый заказ")]
     ],
     resize_keyboard=True
 )
